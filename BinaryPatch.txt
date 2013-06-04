@@ -1,0 +1,120 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.IO;
+using System.Windows.Forms;
+
+namespace BinaryWrite
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            using (FileStream fs = new FileStream(@"C:\Anup\bin\sample.bin", FileMode.Open, FileAccess.Read))
+            {
+                using (BinaryReader r = new BinaryReader(fs))
+                {
+                    // Read data from Test.data.
+                   // for (int i = 0; i < 11; i++)
+                    {
+                        byte[] b = new byte[5];
+                        b = r.ReadBytes(5);
+                        
+                    }
+                }
+            }
+
+            using (FileStream fs = new FileStream(@"C:\Anup\bin\sample.bin", FileMode.Open, FileAccess.ReadWrite))
+            {
+                // Create the writer for data.
+                using (BinaryWriter w = new BinaryWriter(fs))
+                {
+                    // Write data to Test.data.
+                    w.Seek(3, SeekOrigin.Begin);
+
+                    byte[] b = new byte[3] { 0xA, 0xB, 0xC};
+                    /*
+                     * for (int i = 0; i < 11; i++)
+                    {
+                        w.Write(i);
+                    }
+                     */
+                    w.Write(b);
+                }
+            }
+            byte[] searchstring = new byte[]{0x0F, 00, 0x89, 0x7D, 0xFC, 0xEB, 0x38, 0x81, 0x0FB, 0x60, 0xEA, 0x00, 0x00, 0x72, 0x23};
+            byte[] replacestring = new byte[]{0x0F, 00, 0x89, 0x7D, 0xFC, 0xEB, 0x38, 0x81, 0x0FB, 0x60, 0xEA, 0x00, 0x00, 0xEB, 0x23};
+
+            if (Patch(@"C:\Program Files\ASE\ASE2000 Comm Test Set (Trial Version)\ASE2000 Comm Test Set Trial.exe",
+            searchstring, replacestring, 0x15E90))
+            {
+                MessageBox.Show("Patched ASE2000 Comm Test Set Trial.exe successfully!"); 
+            }
+
+            searchstring = new byte[] { 0x83, 0xC4, 0x08, 0x85, 0xC0, 0x74, 0x7E};
+            replacestring = new byte[] { 0x83, 0xC4, 0x08, 0x85, 0xC0, 0xEB, 0x7E };
+
+            if (Patch(@"C:\Windows\System32\Izzdrv.dll", searchstring, replacestring, 0x7191))
+            {
+                MessageBox.Show("Patched Izzdrv.dll successfully!");
+            }
+        }
+        
+        static bool Patch(string sourceFile, byte[] searchBinaryString, byte[] replaceBinaryString, int nOffset)
+        {
+            if (searchBinaryString.Length != replaceBinaryString.Length || searchBinaryString.Length == 0)
+            {
+                MessageBox.Show("Error! SearchString not equal to ReplaceString or Search String length zero! Patch failed");
+                return false;
+            }
+
+            try
+            {
+                using (FileStream fs = new FileStream(sourceFile, FileMode.Open, FileAccess.Read))
+                {
+                    using (BinaryReader r = new BinaryReader(fs))
+                    {
+                        int l_nNumOfBytesToRead = searchBinaryString.Length;
+                        byte[] l_arrReadBytes = new byte[l_nNumOfBytesToRead];
+                        fs.Seek(nOffset, SeekOrigin.Begin);
+                        l_arrReadBytes = r.ReadBytes(l_nNumOfBytesToRead);
+
+                        if(Enumerable.SequenceEqual(l_arrReadBytes, searchBinaryString))
+                        {
+                            MessageBox.Show("Voila Search succeeded!!!");
+                        }
+                        else if (Enumerable.SequenceEqual(l_arrReadBytes, replaceBinaryString))
+                        {
+                            MessageBox.Show("File already patched!!! No patch required. Ignoring");
+                            return false;
+                        }
+                        else
+                        {
+                            MessageBox.Show("Unknown file! Probably incorrect file selected for patching");
+                            return false;
+                        }
+                    }
+                }
+                using (FileStream fs = new FileStream(sourceFile, FileMode.Open, FileAccess.ReadWrite))
+                {
+                    //If control reaches here, File exists and ReadBytes is equal to search string... Moving ahead to patch
+
+                    using (BinaryWriter w = new BinaryWriter(fs))
+                    {
+                        fs.Seek(nOffset, SeekOrigin.Begin);
+                        w.Write(replaceBinaryString);
+                        MessageBox.Show("File patched successfully!!");
+                        return true;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+
+                throw e;
+            }
+          
+        }
+    }
+}
