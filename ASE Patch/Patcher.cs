@@ -70,5 +70,30 @@ namespace ASE_Patch
                 MessageBox.Show("Exception found during initialize: " + e.Message);
             }
         }
+
+        public bool Patch()
+        {
+            try
+            {
+                using (FileStream fs = new FileStream(m_strSourceFile, FileMode.Open, FileAccess.ReadWrite))
+                {
+                    //If control reaches here, File exists and ReadBytes is equal to search string... Moving ahead to patch
+
+                    using (BinaryWriter w = new BinaryWriter(fs))
+                    {
+                        fs.Seek(m_nOffset, SeekOrigin.Begin);
+                        w.Write(m_strReplaceBinaryString);
+                        //MessageBox.Show("File patched successfully!!");
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+
+                throw e;
+            }
+
+        }
     }
 }
